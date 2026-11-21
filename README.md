@@ -6,13 +6,13 @@ to G/L account, VAT code, cost centre and approver, and given an action: **post*
 
 - **Questions for Finance and the assumptions made instead:** [docs/questions.md](docs/questions.md)
 - Finance's approval rules (case data): [approval_rules.md](case_B_invoices_without_typing/approval_rules.md)
-- The one-page note for Finance is sent separately.
+- **The one-page note for Finance:** [docs/note_for_finance.pdf](docs/note_for_finance.pdf)
 
 ## Where it stands
 
 All 16 case emails run end to end: mailbox simulator → n8n flow → rules → simulated Business Central.
-The result matches the expected outcome agreed in [docs/questions.md](docs/questions.md), and
-`check_expected.py` tests this on every run.
+The result matches the expected outcome agreed in [docs/questions.md](docs/questions.md);
+`tools/check_expected.py` tests this, and `demo.py` runs it at the end of every demo.
 
 | Action | Emails | Why |
 |---|---|---|
@@ -42,7 +42,7 @@ Finance to press post.
 | Type or correct fields; choose account, VAT code, cost centre | Read from the PDF or email text; coded by rules from the supplier list, PO lines and fixed tables |
 | Compare PO price and quantity by hand | Compared to the cent against the PO and quantity received (rule 2, Q5) |
 | Email the PDF to the approver and chase | Draft invoice waits in BC with its approver(s) and the reason; status shows what waits for whom |
-| Duplicates found when the supplier says they were paid twice | Duplicate check on supplier + invoice number + identical file, on arrival |
+| Duplicates found when the supplier says they were paid twice | Duplicate check on supplier + invoice number, on arrival (an identical file is named as extra evidence); BC also refuses to post the same invoice number twice |
 | VAT wrong on foreign invoices | VAT code from supplier country and what they sell; foreign VAT on an invoice is held (Q8) |
 | Late payment because the invoice sat in someone's mail | Says when an invoice arrived long after its date, or is due within 10 days (Q13) |
 
@@ -64,7 +64,7 @@ flowchart LR
     I --> J
 ```
 
-1. **`deliver.py`** sends one `.eml` file (a real email with its PDF attached) to the n8n webhook and waits until
+1. **`mailbox_sim/deliver.py`** sends one `.eml` file (a real email with its PDF attached) to the n8n webhook and waits until
    the flow has finished, so a reminder or credit note is always checked after the invoice it refers to.
 2. **Invoice check** (Python) asks Business Central for the master data and the documents already received, reads
    the email, runs the checks and returns the booking lines with an action and a reason. It keeps nothing itself.
@@ -134,9 +134,9 @@ API without data retention, with bank details masked.
 | What fails | What happens | Who notices |
 |---|---|---|
 | A PDF can't be opened or read | hold: "could not read this email… enter it by hand" | Finance, in the hold list |
-| The rules service or BC is down | The flow stops; nothing is booked; the email isn't lost | Failed run in n8n (production: Power Automate run history + alert) |
+| The rules service or BC is down | The flow stops; nothing is booked; the email waits in the mailbox | Prototype: the failed run in n8n. Production: an alert to Finance from Power Automate |
 | An unexpected action value | n8n's fallback route is hold | Finance, in the hold list |
-| A rule changes the expected result | `check_expected.py` fails before the demo/release | Whoever runs it (us) |
+| A rule changes the expected result | `tools/check_expected.py` fails before the demo/release | Whoever runs it (us) |
 
 ## How to run it
 
@@ -201,6 +201,17 @@ The demo uses n8n because it runs locally without a work account. At New Works t
 
 Field names and endpoints in the simulated BC are our own, not Business Central's API.
 
+## Build or buy
+
+- **Use what New Works already has:** Power Automate to pick up the emails, and Business Central for approvals
+  (in Teams), posting and payment.
+- **Check the existing document capture tool first** (Q2): it may be able to take over more of the reading
+  before any more reading logic is built.
+- **Build only New Works' own checks** (supplier and bank account, PO match, VAT, approvers, duplicates): no
+  standard product knows these rules. They are kept in small tables (`config/`, supplier data in BC) that
+  Finance can change.
+- Compare this with the freelance CFO's recommendation before deciding.
+
 ## Repository
 
 ```
@@ -218,6 +229,7 @@ Field names and endpoints in the simulated BC are our own, not Business Central'
 ├── config/                          our rule tables: forwarder lines, suggestions, demo exchange rates
 ├── n8n/invoice_flow.json            the n8n flow
 ├── docs/questions.md                questions for Finance and the assumptions made instead
+├── docs/note_for_finance.pdf        the one-page note for Finance
 ├── case_B_invoices_without_typing/  case data, never modified
 ├── docker-compose.yml               n8n
 └── output/                          generated by runs, not in the repo (database, logs, booking file)

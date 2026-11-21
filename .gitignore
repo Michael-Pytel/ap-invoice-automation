@@ -5,6 +5,8 @@ output/
 docs/case_brief/
 docs/demo_script.md
 docs/plan.md
+docs/note_for_finance.*
+!docs/note_for_finance.pdf
 CLAUDE.md
 
 # Python
