@@ -1,0 +1,19 @@
+gl_account,name,use
+2010,"Purchases, finished goods",Goods for resale bought from factories
+2050,Freight in,Inbound freight to our warehouse
+2060,Customs duty,Duty on goods imported from outside the EU
+2070,Packaging materials,"Cartons, foam, tape"
+2510,Freight out,Delivery to customers
+3010,Marketing: photo and content,"Photography, film, image rights"
+3020,Marketing: trade fairs and events,"Stands, fair fees, event costs"
+3030,Marketing: print and copywriting,"Catalogues, printed material, texts"
+3510,Product development: prototypes and samples,"Prototypes, models, test samples"
+4010,Rent and facilities,"Office, showroom, warehouse rent"
+4050,Small equipment and installation,"Fit-out, installation, small furniture for own use"
+4210,Software and subscriptions,SaaS and licences
+4310,Consultants and external services,"Advisers, freelancers not covered elsewhere"
+4410,Travel,"Flights, hotels, transport"
+4420,Meals and entertainment,"Restaurant and hospitality. Paid by card and handled in the expense tool, not as supplier invoices"
+4910,Bank and payment fees,"Bank charges, FX fees"
+6810,Input VAT,"Deductible VAT on purchases (balance account, set by VAT code)"
+6820,Import VAT,VAT paid on import via the forwarder or customs (balance account)

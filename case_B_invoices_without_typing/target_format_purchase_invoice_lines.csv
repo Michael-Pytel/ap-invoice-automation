@@ -1,0 +1,3 @@
+email_id,action,document_type,vendor_no,vendor_name,vendor_invoice_no,invoice_date,due_date,currency,line_no,description,gl_account,cost_centre,vat_code,amount_excl_vat,vat_amount,po_number,approver_role,confidence,flag,flag_reason
+E00,post,invoice,V9999,Example Supplier ApS,EX-100,2026-10-01,2026-10-31,DKK,1,Example service line,4310,ADMIN,DK25,1000.00,250.00,,CEO,high,no,
+E00,hold,invoice,V9999,Example Supplier ApS,EX-100,2026-10-01,2026-10-31,DKK,2,Example line that needs a human,4310,ADMIN,DK25,500.00,125.00,,CEO,low,yes,Describe in one sentence what the person must check

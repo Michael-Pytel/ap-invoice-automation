@@ -1,0 +1,5 @@
+vendor_no,pattern,gl_account,vat_code,cost_centre,note
+V1002,importmoms|import vat,6820,IMPORT-VAT,OPS,"Import VAT paid by the forwarder on our behalf (Q11)"
+V1002,terminalhåndtering|fortoldning|terminal handling|customs clearance,2050,DK25,OPS,"Forwarder's own Danish service, 25% VAT (Q11)"
+V1002,\btold\b|customs duty,2060,NOVAT,OPS,"Customs duty paid by the forwarder on our behalf (Q11)"
+V1002,søfragt|sea freight|ocean freight|\bfragt\b,2050,NOVAT,OPS,"International freight, no VAT (Q11)"

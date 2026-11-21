@@ -1,0 +1,193 @@
+{
+  "id": "NwInvoiceFlow001",
+  "name": "Invoices without typing: mailbox to Business Central",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "New email in invoice@",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "6f1c2a9e-4b7d-4e2a-9c51-0a7e3d1b2c01",
+      "notes": "Demo: the mailbox simulator (deliver.py) posts each .eml here. Production: Power Automate 'When a new email arrives (V3)' on invoice@newworks.dk.",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "invoice-mailbox",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Invoice check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 300],
+      "notes": "All rules live in Python (runs locally; nothing sent to outside services). Returns action post / hold / reject, the booking lines and the reasons.",
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8101/process-eml",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ eml_base64: $json.body.eml_base64 }) }}",
+        "options": { "timeout": 60000 }
+      }
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Log in Business Central",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "notes": "Every email becomes an incoming document. Post and hold also become a draft purchase invoice. Production: Business Central connector.",
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:8100/incoming-documents",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 30000 }
+      }
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Route on action",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [720, 300],
+      "notes": "n8n makes no decisions: it only follows the action the invoice check returned. Anything unexpected goes to hold.",
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "outputKey": "post",
+              "renameOutput": true,
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c1",
+                    "leftValue": "={{ $('Invoice check').item.json.action }}",
+                    "rightValue": "post",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "reject",
+              "renameOutput": true,
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "c3",
+                    "leftValue": "={{ $('Invoice check').item.json.action }}",
+                    "rightValue": "reject",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "hold" }
+      }
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "Post: ask the approver",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [980, 120],
+      "notes": "Production: Approvals 'Start and wait for an approval' in Teams to the budget owner (and CEO above DKK 50,000).",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m1",
+              "name": "message",
+              "type": "string",
+              "value": "={{ $json.logged[0].status === 'Released' ? 'Approved automatically (PO match). ' + $json.logged[0].purchase_invoice_no + ' is ready for Finance to post.' : 'Approval request sent to ' + $('Invoice check').item.json.rows[0].approver_role + ' for ' + $json.logged[0].purchase_invoice_no + '.' }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000006",
+      "name": "Hold: tell Finance why",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [980, 300],
+      "notes": "Production: Teams message to the Finance channel with the reason. Nothing is paid until a person takes it off hold.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m2",
+              "name": "message",
+              "type": "string",
+              "value": "={{ 'On hold for Finance: ' + ($json.logged[0] ? $json.logged[0].purchase_invoice_no : '') + '. ' + $('Invoice check').item.json.rows[0].flag_reason }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000007",
+      "name": "Reject: not booked",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [980, 480],
+      "notes": "Duplicates, receipts and statements: logged in Business Central as incoming documents only.",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "m3",
+              "name": "message",
+              "type": "string",
+              "value": "={{ 'Not booked: ' + $('Invoice check').item.json.rows[0].flag_reason }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a1000000-0000-4000-8000-000000000008",
+      "name": "Reply to the mailbox",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1240, 300],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ email_id: $('Invoice check').item.json.email_id, action: $('Invoice check').item.json.action, logged: $('Log in Business Central').item.json.logged, flag_reason: $('Invoice check').item.json.rows[0].flag_reason, message: $json.message }) }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "New email in invoice@": { "main": [[{ "node": "Invoice check", "type": "main", "index": 0 }]] },
+    "Invoice check": { "main": [[{ "node": "Log in Business Central", "type": "main", "index": 0 }]] },
+    "Log in Business Central": { "main": [[{ "node": "Route on action", "type": "main", "index": 0 }]] },
+    "Route on action": {
+      "main": [
+        [{ "node": "Post: ask the approver", "type": "main", "index": 0 }],
+        [{ "node": "Reject: not booked", "type": "main", "index": 0 }],
+        [{ "node": "Hold: tell Finance why", "type": "main", "index": 0 }]
+      ]
+    },
+    "Post: ask the approver": { "main": [[{ "node": "Reply to the mailbox", "type": "main", "index": 0 }]] },
+    "Hold: tell Finance why": { "main": [[{ "node": "Reply to the mailbox", "type": "main", "index": 0 }]] },
+    "Reject: not booked": { "main": [[{ "node": "Reply to the mailbox", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {}
+}

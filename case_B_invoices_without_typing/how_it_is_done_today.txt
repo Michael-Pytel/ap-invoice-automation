@@ -1,0 +1,17 @@
+How we handle supplier invoices today (written by Finance)
+
+All supplier invoices are supposed to come to invoice@newworks.dk. Some still go to people directly and get forwarded.
+
+1. Every morning we go through the mailbox and open each mail. Most have a PDF, some have the invoice in the mail text.
+   Reminders and statements also land here, and sometimes receipts from colleagues.
+2. We check that the supplier exists in Business Central. If not, we create it.
+3. The PDF goes into our document capture tool. It reads some fields, but we type or correct most of it:
+   supplier, invoice number, dates, amounts, currency. Then we choose G/L account, VAT code and cost centre ourselves.
+4. For goods we look up the purchase order in BC and compare price and quantity by hand.
+5. We email the PDF to the person who has to approve it. Then we wait, and chase them if nothing happens.
+   Approvals sit in our inboxes, so it is hard to see what is waiting for whom.
+6. When it is approved we post the invoice in BC.
+7. Twice a week we pay due invoices in the netbank. Foreign currency payments are done one by one.
+
+What goes wrong: duplicates we only catch when the supplier says they were paid twice, invoices nobody approves,
+VAT coded wrong on foreign invoices, and late payment because the invoice sat in someone's mail.

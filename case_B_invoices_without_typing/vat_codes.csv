@@ -1,0 +1,8 @@
+vat_code,description,vat_rate_on_invoice_pct,treatment
+DK25,"Danish supplier, 25% Danish VAT on the invoice",25,VAT on the invoice is deductible input VAT
+EU-GOODS,Goods from a supplier in another EU country,0,No VAT on the invoice. Reverse charge: we calculate and declare 25% ourselves
+EU-SERV,Services from a supplier in another EU country,0,No VAT on the invoice. Reverse charge: we calculate and declare 25% ourselves
+NONEU-SERV,Services from a supplier outside the EU,0,No VAT on the invoice. Reverse charge: we calculate and declare 25% ourselves
+IMPORT,Goods from a supplier outside the EU,0,No VAT on the supplier invoice. Import VAT is paid at customs and arrives on the forwarder's invoice
+IMPORT-VAT,Import VAT re-invoiced by the forwarder,100,"The whole line is VAT. Post to 6820, deductible"
+NOVAT,No VAT,0,"International freight, customs duty and other outlays without VAT"

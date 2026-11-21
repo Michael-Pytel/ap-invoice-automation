@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Purchase Invoices</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --panel: #ffffff; --ink: #1d1d1b; --muted: #6b6a66; --line: #e4e2dc; --soft: #f0efeb;
+    --hold: #b45309; --hold-bg: #fdf3e3; --pending: #1d4ed8; --pending-bg: #e8effd;
+    --released: #15803d; --released-bg: #e6f4ea; --posted: #57534e; --posted-bg: #eeedea;
+    --reject: #b91c1c; --reject-bg: #fbeaea; --accent: #1d1d1b; --accent-ink: #ffffff; --flash: #fff6c7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161615; --panel: #1f1f1d; --ink: #edece8; --muted: #a3a19b; --line: #34332f; --soft: #2a2927;
+      --hold: #f2b25c; --hold-bg: #3a2a12; --pending: #93b4f8; --pending-bg: #1b2846;
+      --released: #6fcf8f; --released-bg: #173322; --posted: #c3c0b9; --posted-bg: #2c2b28;
+      --reject: #f28b8b; --reject-bg: #3b1a1a; --accent: #edece8; --accent-ink: #161615; --flash: #4a4220;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 18px 24px 8px; }
+  header h1 { margin: 0; font-size: 20px; font-weight: 650; letter-spacing: -0.01em; }
+  header .sub { color: var(--muted); }
+  header .right { margin-left: auto; display: flex; gap: 14px; align-items: baseline; color: var(--muted); font-size: 13px; }
+  header a { color: var(--ink); }
+  nav { display: flex; gap: 6px; padding: 8px 24px 14px; flex-wrap: wrap; }
+  nav button { border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 999px;
+               padding: 6px 14px; font: inherit; cursor: pointer; display: flex; gap: 8px; align-items: center; }
+  nav button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  nav .count { font-variant-numeric: tabular-nums; font-weight: 650; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px; padding: 0 24px 24px; }
+  @media (max-width: 960px) { main { grid-template-columns: 1fr; padding: 0 16px 16px; } header, nav { padding-left: 16px; padding-right: 16px; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .list .empty { padding: 28px; color: var(--muted); text-align: center; }
+  .row { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; gap: 4px 12px; padding: 12px 16px;
+         border-bottom: 1px solid var(--line); cursor: pointer; }
+  .row:last-child { border-bottom: 0; }
+  .row:hover { background: var(--soft); }
+  .row.selected { background: var(--soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .row.new { animation: flash 2.4s ease-out; }
+  @keyframes flash { from { background: var(--flash); } to { background: transparent; } }
+  .email { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .supplier { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .amount { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .meta { grid-column: 2 / 4; color: var(--muted); font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .why { grid-column: 2 / 4; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .s-hold { color: var(--hold); background: var(--hold-bg); }
+  .s-pending { color: var(--pending); background: var(--pending-bg); }
+  .s-released { color: var(--released); background: var(--released-bg); }
+  .s-posted { color: var(--posted); background: var(--posted-bg); }
+  .s-reject { color: var(--reject); background: var(--reject-bg); }
+  .urgent { color: var(--reject); font-weight: 600; }
+  .detail { padding: 20px 22px; }
+  .detail .placeholder { color: var(--muted); padding: 40px 0; text-align: center; }
+  .detail h2 { margin: 0 0 4px; font-size: 18px; }
+  .detail .head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; color: var(--muted); }
+  .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px 18px; margin: 0 0 16px; }
+  .facts div { display: flex; flex-direction: column; }
+  .facts span { color: var(--muted); font-size: 12px; }
+  .facts b { font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin: 18px 0 8px; font-weight: 650; }
+  .reasons { margin: 0; padding: 12px 14px 12px 30px; border-radius: 8px; background: var(--soft); }
+  .reasons li { margin: 3px 0; }
+  .reasons li.info { color: var(--muted); }
+  .reasons.hold { background: var(--hold-bg); }
+  .reasons.reject { background: var(--reject-bg); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .actions { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 8px; }
+  .actions .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .actions p { margin: 0; color: var(--muted); font-size: 13px; }
+  textarea { width: 100%; min-height: 64px; font: inherit; padding: 8px 10px; border-radius: 6px; resize: vertical;
+             border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+  .btn { font: inherit; font-weight: 600; padding: 8px 14px; border-radius: 6px; cursor: pointer;
+         border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); }
+  .btn.secondary { background: var(--panel); color: var(--ink); border-color: var(--line); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .history { list-style: none; margin: 0; padding: 0; }
+  .history li { padding: 6px 0 6px 16px; border-left: 2px solid var(--line); position: relative; font-size: 13px; }
+  .history li::before { content: ""; position: absolute; left: -5px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .history .when { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .history .note { color: var(--muted); }
+  .toast { position: fixed; right: 20px; bottom: 20px; max-width: 420px; padding: 12px 16px; border-radius: 8px;
+           background: var(--reject-bg); color: var(--reject); border: 1px solid var(--reject); display: none; }
+  .toast.ok { background: var(--released-bg); color: var(--released); border-color: var(--released); }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Purchase invoices</h1>
+  <span class="sub">Business Central (simulated) · from invoice@newworks.dk</span>
+  <span class="right">
+    <span id="updated">connecting…</span>
+    <a href="/export/purchase-invoice-lines.csv">Download booking lines (CSV)</a>
+  </span>
+</header>
+<nav id="tabs" role="tablist"></nav>
+<main>
+  <section class="panel list" id="list" aria-label="Invoices"></section>
+  <section class="panel detail" id="detail" aria-live="polite"><div class="placeholder">Select an invoice to see why it is here and what to do.</div></section>
+</main>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const TABS = [
+  { key: "On hold", label: "On hold", cls: "s-hold" },
+  { key: "Pending approval", label: "Waiting for approval", cls: "s-pending" },
+  { key: "Released", label: "Ready to post", cls: "s-released" },
+  { key: "Posted", label: "Posted", cls: "s-posted" },
+  { key: "emails", label: "All emails", cls: "" },
+];
+const STATUS_CLASS = { "On hold": "s-hold", "Pending approval": "s-pending", "Released": "s-released", "Posted": "s-posted" };
+let tab = "On hold", selected = null, invoices = [], docs = [], seen = null, lastDetail = "";
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (x, cur) => x === "" || x == null ? "" : Number(x).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (cur ? " " + cur : "");
+const day = iso => iso ? new Date(iso.slice(0, 10) + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "";
+const sentences = text => (text || "").split(/(?<=[.!?])\s+(?=[A-Z"'(])/).filter(Boolean);
+const docFor = inv => docs.find(d => d.purchase_invoice_no === inv.no) || {};
+function daysToPay(inv) {
+  const d = docFor(inv);
+  if (!inv.due_date || !d.received_at) return null;
+  return Math.round((new Date(inv.due_date + "T12:00:00") - new Date(d.received_at.slice(0, 10) + "T12:00:00")) / 864e5);
+}
+function dueLabel(inv) {
+  if (!inv.due_date) return "";
+  const n = daysToPay(inv);
+  const urgent = n !== null && n <= 10 && inv.status !== "Posted";
+  return `<span class="${urgent ? "urgent" : ""}">due ${esc(day(inv.due_date))}${n !== null ? ` · ${n} days after arrival` : ""}</span>`;
+}
+
+async function api(method, path, body) {
+  const res = await fetch(path, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || res.statusText);
+  return data;
+}
+function toast(msg, ok) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.className = "toast" + (ok ? " ok" : ""); t.style.display = "block";
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", ok ? 2500 : 6000);
+}
+
+async function refresh() {
+  try {
+    [invoices, docs] = await Promise.all([api("GET", "/purchase-invoices"), api("GET", "/incoming-documents")]);
+    document.getElementById("updated").textContent = "updated " + new Date().toLocaleTimeString("en-GB");
+  } catch (e) {
+    document.getElementById("updated").textContent = "Business Central not reachable";
+    return;
+  }
+  const ids = new Set(docs.map(d => d.no));
+  const fresh = seen ? new Set([...ids].filter(x => !seen.has(x))) : new Set();
+  seen = ids;
+  renderTabs(); renderList(fresh); renderDetail();
+}
+
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = TABS.map(t => {
+    const n = t.key === "emails" ? new Set(docs.map(d => d.email_id)).size : invoices.filter(i => i.status === t.key).length;
+    return `<button role="tab" aria-selected="${t.key === tab}" data-tab="${esc(t.key)}">${esc(t.label)} <span class="count">${n}</span></button>`;
+  }).join("");
+}
+document.getElementById("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  tab = b.dataset.tab; selected = null; lastDetail = ""; renderTabs(); renderList(new Set()); renderDetail();
+});
+
+function renderList(fresh) {
+  const el = document.getElementById("list");
+  if (tab === "emails") {
+    const rows = [...docs].sort((a, b) => a.received_at.localeCompare(b.received_at));
+    el.innerHTML = rows.length ? rows.map(d => {
+      const inv = invoices.find(i => i.no === d.purchase_invoice_no);
+      const pill = inv ? `<span class="pill ${STATUS_CLASS[inv.status]}">${esc(inv.status)}</span>` : `<span class="pill s-reject">Not booked</span>`;
+      return `<div class="row ${fresh.has(d.no) ? "new" : ""} ${selected === "doc:" + d.no ? "selected" : ""}" data-sel="doc:${esc(d.no)}">
+        <span class="email">${esc(d.email_id)}</span><span class="supplier">${esc(d.vendor_name)}</span>
+        <span class="amount">${d.total ? esc(money(d.total, d.currency)) : ""}</span>
+        <span class="meta">${pill}<span>${esc(d.document_type.replace("_", " "))}</span><span>received ${esc(day(d.received_at))}</span></span>
+        <span class="why">${esc(sentences(d.flag_reason)[0] || "All checks passed.")}</span></div>`;
+    }).join("") : `<div class="empty">No emails yet. Deliver some from the mailbox.</div>`;
+    return;
+  }
+  let rows = invoices.filter(i => i.status === tab);
+  if (tab === "On hold") rows.sort((a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999"));
+  el.innerHTML = rows.length ? rows.map(i => {
+    const d = docFor(i);
+    return `<div class="row ${fresh.has(d.no) ? "new" : ""} ${selected === i.no ? "selected" : ""}" data-sel="${esc(i.no)}">
+      <span class="email">${esc(i.email_id)}</span><span class="supplier">${esc(i.vendor_name)}</span>
+      <span class="amount">${esc(money(i.amount_excl_vat, i.currency))}</span>
+      <span class="meta"><span>${esc(i.no)}</span><span>${esc(i.document_type === "credit_note" ? "credit note" : "invoice")} ${esc(i.vendor_invoice_no)}</span>${dueLabel(i)}<span>→ ${esc(i.approver_role)}</span></span>
+      ${tab === "On hold" ? `<span class="why">${esc(sentences(i.flag_reason)[0])}</span>` : ""}</div>`;
+  }).join("") : `<div class="empty">Nothing ${esc(TABS.find(t => t.key === tab).label.toLowerCase())}.</div>`;
+}
+document.getElementById("list").addEventListener("click", e => {
+  const r = e.target.closest(".row"); if (!r) return;
+  selected = r.dataset.sel; lastDetail = "";
+  if (selected.startsWith("doc:")) {
+    const d = docs.find(x => "doc:" + x.no === selected);
+    if (d && d.purchase_invoice_no) selected = d.purchase_invoice_no;
+  }
+  renderList(new Set()); renderDetail();
+});
+
+function reasonList(text, kind) {
+  const items = sentences(text);
+  if (!items.length) return `<p class="muted">All checks passed.</p>`;
+  return `<ul class="reasons ${kind}">${items.map(s => `<li class="${/^Info:|\(Q13\)|Approved automatically/.test(s) ? "info" : ""}">${esc(s)}</li>`).join("")}</ul>`;
+}
+
+function renderDetail() {
+  const el = document.getElementById("detail");
+  if (!selected) { if (lastDetail !== "none") { el.innerHTML = `<div class="placeholder">Select an invoice to see why it is here and what to do.</div>`; lastDetail = "none"; } return; }
+  if (selected.startsWith("doc:")) {
+    const d = docs.find(x => "doc:" + x.no === selected); if (!d) return;
+    const key = JSON.stringify(d); if (key === lastDetail) return; lastDetail = key;
+    el.innerHTML = `<h2>${esc(d.vendor_name)}</h2>
+      <div class="head"><span class="pill s-reject">Not booked</span><span>${esc(d.email_id)} · ${esc(d.no)} · ${esc(d.document_type.replace("_", " "))}</span></div>
+      <div class="facts"><div><span>Received</span><b>${esc(day(d.received_at))}</b></div>
+        <div><span>Document no.</span><b>${esc(d.invoice_no || "–")}</b></div>
+        <div><span>Amount</span><b>${esc(d.total ? money(d.total, d.currency) : "–")}</b></div></div>
+      <h3>Why it was not booked</h3>${reasonList(d.flag_reason, "reject")}
+      <p class="muted">Logged as an incoming document only. Nothing to approve or post.</p>`;
+    return;
+  }
+  const inv = invoices.find(i => i.no === selected); if (!inv) return;
+  const key = JSON.stringify(inv); if (key === lastDetail) return; lastDetail = key;
+  const roles = inv.approver_role.split(" + ");
+  let actions = "";
+  if (inv.status === "On hold") {
+    actions = `<div class="actions"><p>Deal with the reasons above first (for a bank account or new supplier: phone a contact you already know, never one from the email). Then write what you checked.</p>
+      <textarea id="note" placeholder="What did you check? e.g. Phoned our known contact at the supplier; new bank account confirmed."></textarea>
+      <div class="buttons"><button class="btn" data-act="resolve">Take off hold (Finance)</button></div></div>`;
+  } else if (inv.status === "Pending approval") {
+    actions = `<div class="actions"><p>Every approver must approve before Finance can post it.</p><div class="buttons">${roles.map(r =>
+      inv.approvals.includes(r) ? `<button class="btn secondary" disabled>✓ ${esc(r)}</button>` : `<button class="btn" data-act="approve" data-role="${esc(r)}">Approve as ${esc(r)}</button>`).join("")}</div></div>`;
+  } else if (inv.status === "Released") {
+    actions = `<div class="actions"><p>Approved. Posting books it in the ledger. Payment is a separate step.</p><div class="buttons"><button class="btn" data-act="post">Post (Finance)</button></div></div>`;
+  } else {
+    actions = `<div class="actions"><p>Posted as <b>${esc(inv.posted_no)}</b>. Pay from the bank account on file only.</p></div>`;
+  }
+  const lines = inv.lines.map(l => `<tr><td>${esc(l.description)}</td><td>${esc(l.gl_account)}</td><td>${esc(l.cost_centre)}</td><td>${esc(l.vat_code)}</td>
+    <td class="num">${esc(money(l.amount_excl_vat))}</td><td class="num">${esc(money(l.vat_amount))}</td><td>${esc(l.po_number)}</td><td>${esc(l.confidence)}</td></tr>`).join("");
+  el.innerHTML = `<h2>${esc(inv.vendor_name)}</h2>
+    <div class="head"><span class="pill ${STATUS_CLASS[inv.status]}">${esc(inv.status)}</span><span>${esc(inv.email_id)} · ${esc(inv.no)}</span></div>
+    <div class="facts">
+      <div><span>${inv.document_type === "credit_note" ? "Credit note" : "Invoice"} no.</span><b>${esc(inv.vendor_invoice_no)}</b></div>
+      <div><span>Invoice date</span><b>${esc(day(inv.invoice_date))}</b></div>
+      <div><span>Due date</span><b>${dueLabel(inv) || "–"}</b></div>
+      <div><span>Excl. VAT</span><b>${esc(money(inv.amount_excl_vat, inv.currency))}</b></div>
+      <div><span>VAT</span><b>${esc(money(inv.vat_amount, inv.currency))}</b></div>
+      <div><span>Approver</span><b>${esc(inv.approver_role)}</b></div>
+    </div>
+    <h3>${inv.status === "On hold" ? "Why it is on hold" : "Notes from the check"}</h3>${reasonList(inv.flag_reason, inv.status === "On hold" ? "hold" : "")}
+    <h3>Booking lines</h3>
+    <table><thead><tr><th>Description</th><th>G/L</th><th>Cost centre</th><th>VAT</th><th class="num">Excl. VAT</th><th class="num">VAT</th><th>PO</th><th>Confidence</th></tr></thead><tbody>${lines}</tbody></table>
+    <h3>What to do</h3>${actions}
+    <h3>History</h3><ul class="history">${inv.history.map(h => `<li><span class="when">${esc(h.at.replace("T", " "))}</span> · <b>${esc(h.by)}</b>: ${esc(h.event)}${h.note && h.by !== "Invoice check" ? `<div class="note">“${esc(h.note)}”</div>` : ""}</li>`).join("")}</ul>`;
+}
+
+document.getElementById("detail").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-act]"); if (!b) return;
+  b.disabled = true;
+  try {
+    if (b.dataset.act === "resolve") await api("POST", `/purchase-invoices/${selected}/resolve`, { by: "Finance", note: document.getElementById("note").value });
+    if (b.dataset.act === "approve") await api("POST", `/purchase-invoices/${selected}/approve`, { by: b.dataset.role });
+    if (b.dataset.act === "post") await api("POST", `/purchase-invoices/${selected}/post`, { by: "Finance" });
+    toast("Done.", true);
+  } catch (err) { toast(err.message); b.disabled = false; }
+  lastDetail = ""; await refresh();
+  const inv = invoices.find(i => i.no === selected);
+  if (inv && tab !== "emails" && inv.status !== tab) { tab = inv.status; renderTabs(); renderList(new Set()); }
+});
+
+refresh(); setInterval(refresh, 2000);
+</script>
+</body>
+</html>

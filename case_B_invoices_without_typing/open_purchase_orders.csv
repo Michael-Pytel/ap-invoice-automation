@@ -1,0 +1,8 @@
+po_number,line,vendor_no,supplier_item_no,description,qty_ordered,qty_received,unit_price,currency,gl_account,cost_centre
+NW-PO-2026-064,1,V1004,BW-P70-WH,"Pendant lamp, folded paper shade, Ø70, white, EU plug",120,120,41.5,USD,2010,OPS
+NW-PO-2026-069,1,V1005,MC-TOP-82-TRV,"Table top 82x82 cm, travertine, honed",30,18,310.0,EUR,2010,OPS
+NW-PO-2026-071,1,V1003,MD-ST-OAK-N,"Stool, solid oak, natural oil",40,40,96.0,EUR,2010,OPS
+NW-PO-2026-071,2,V1003,MD-ST-OAK-F,"Stool, solid oak, fumed",20,20,104.0,EUR,2010,OPS
+NW-PO-2026-075,1,V1003,MD-BN-OAK-N,"Bench 150, solid oak, natural oil",40,40,112.0,EUR,2010,OPS
+NW-PO-2026-075,2,V1003,MD-SD-OAK-N,"Side table, solid oak, natural oil",30,30,100.0,EUR,2010,OPS
+NW-PO-2026-078,1,V1003,MD-ST-OAK-N,"Stool, solid oak, natural oil",50,0,96.0,EUR,2010,OPS
